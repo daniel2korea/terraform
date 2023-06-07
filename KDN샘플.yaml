@@ -1,0 +1,81 @@
+formatVersion: 1
+inputs:
+  flavor:
+    type: string
+    enum:
+      - Small
+      - Medium
+      - Large
+    default: Small
+    title: vm spec
+  diskSize:
+    type: integer
+    default: 50
+    title: root volume size
+  vmName:
+    type: string
+    title: vm host name
+  datastore:
+    type: string
+    enum:
+      - storage:vsan-compute
+      - storage:vsan
+    default: storage:vsan-compute
+  oa-ip:
+    type: string
+    title: OA IP Address
+    default: 172.20.10.
+    description: 172.20.10.220-240
+  oa-network:
+    type: string
+    enum:
+      - net:vsphere
+  nsxt:
+    type: string
+    title: Use nsxt?
+    default: 'NO'
+    enum:
+      - 'YES'
+      - 'NO'
+  nsxt-ip:
+    type: string
+    title: NSXT IP Address
+    default: 10.10.10.
+    description: 10.10.10.220-240
+resources:
+  network_nsxt:
+    type: Cloud.vSphere.Network
+    metadata:
+      layoutPosition:
+        - 0
+        - 0
+    properties:
+      networkType: existing
+      constraints:
+        - tag: net:seg_10
+      count: ${input.nsxt=="YES"?1:0}
+  network_service:
+    type: Cloud.vSphere.Network
+    metadata:
+      layoutPosition:
+        - 1
+        - 0
+    properties:
+      networkType: existing
+      constraints:
+        - tag: net:vsphere
+  Cloud_vSphere_Machine_1:
+    type: Cloud.vSphere.Machine
+    metadata:
+      layoutPosition:
+        - 2
+        - 0
+    properties:
+      image: CentOS7.9-min
+      flavor: ${input.flavor}
+      hostname: ${input.vmName}
+      storage:
+        bootDiskCapacityInGB: ${input.diskSize}
+        constraints:
+          - tag: ${input.datastore}
+      networks: ${[input.nsxt=="YES"?{"network":resource.network_service.id,"assignment":"static","address":input.oa-ip,"deviceIndex":0}:null] + [{"network":resource.network_service.id[0],"assignment":"static","address":input.nsxt-ip,"deviceIndex":1}]}
