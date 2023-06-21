@@ -14,18 +14,18 @@ provider "vsphere" {
 #### RETRIEVE DATA INFORMATION ON VCENTER ####
 
 data "vsphere_datacenter" "dc" {
-  name = "vSAN Datacenter"
+  name = "Datacenter"
 }
 
 # If you don't have any resource pools, put "Resources" after cluster name
 data "vsphere_resource_pool" "pool" {
-  name          = "vSAN Cluster/Resources"
+  name          = "COMPUTE/Resources"
   datacenter_id = data.vsphere_datacenter.dc.id
 }
 
 # Retrieve datastore information on vsphere
 data "vsphere_datastore" "datastore" {
-  name          = "vsanDatastore"
+  name          = "vsanDatastore-compute"
   datacenter_id = data.vsphere_datacenter.dc.id
 }
 
@@ -44,7 +44,7 @@ data "vsphere_virtual_machine" "template" {
 #### VM CREATION ####
 
 # Set vm parameters
-resource "vsphere_virtual_machine" "demo" {
+resource "vsphere_virtual_machine" "vm" {
   name             = "vm-one"
   num_cpus         = 2
   memory           = 4096
@@ -60,8 +60,9 @@ resource "vsphere_virtual_machine" "demo" {
 
   # Use a predefined vmware template as main disk
   disk {
-    label = "vm-one.vmdk"
-    size = "10"
+    label = "disk0"
+    size = "30"
+    unit_number = 0
   }
 
   clone {
@@ -84,13 +85,5 @@ resource "vsphere_virtual_machine" "demo" {
   }
 
   # Execute script on remote vm after this creation
-  provisioner "remote-exec" {
-    script = "scripts/example-script.sh"
-    connection {
-      type     = "ssh"
-      user     = "root"
-      password = "VMware1!"
-      host     = vsphere_virtual_machine.demo.default_ip_address 
-    }
-  }
+
 }
